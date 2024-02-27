@@ -1,22 +1,24 @@
 #include <curl/curl.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "config.h"
 #include "callbacks.h"
 #include "do_commands.h"
 #include "auth.h"
+#include "cJSON/cJSON.h"
 
 #define CMD "app"
 
 void app_help(void)
 {
-	printf("Usage: "PROGRAM_NAME" "CMD" { version | webapiversion | buildinfo | defaultsavepath }\n");
+	printf("Usage: "PROGRAM_NAME" "CMD" { version | shutdown }\n");
 }
 
 void do_app(int argc, char **argv)
 {
 	struct MemoryStruct response; 
-	char postField[BUFSIZ] = "";
+	char formattedOutput[BUFSIZ] = "";
 
 	if (argc < 1 || !strcmp(*argv, "help")) {
 		app_help();
@@ -25,26 +27,70 @@ void do_app(int argc, char **argv)
 
 	auth_login();
 
-	if (!strcmp(*argv, "version"))
-		response = GET("/app/version");
-	else if (!strcmp(*argv, "webapiversion"))
-		response = GET("/app/webapiVersion");
-	else if (!strcmp(*argv, "buildinfo"))
-		response = GET("/app/buildInfo");
-	else if (!strcmp(*argv, "defaultsavepath"))
-		response = GET("/app/defaultSavePath");
-	else if (!strcmp(*argv, "shutdown"))
+	if (!strcmp(*argv, "shutdown"))
 		response = POST("/app/shutdown", "");
-	else if (!strcmp(*argv, "preferences"))
-		response = GET("/app/preferences");
-	else if (!strcmp(*argv, "setpreferences")) {
-		if (argc < 2) {
-			fprintf(stderr, "Missing preferences argument\n");
-			exit(EXIT_FAILURE);
+	else if (!strcmp(*argv, "version")) {
+
+		response = GET("/app/version");
+		if (response.size) {
+			strcat(formattedOutput, "qBittorrent version");
+			// replace 'v' with a space
+			*response.memory = ' ';
+			strcat(formattedOutput, response.memory);
+			strcat(formattedOutput, "\n");
+
+			free(response.memory);
+			response.memory = NULL;
+			response.size = 0;
 		}
-		strcat(postField, "json=");
-		strcat(postField, argv[1]);
-		response = POST("/app/setPreferences", postField);
+
+		response = GET("/app/webapiVersion");
+		if (response.size) {
+			strcat(formattedOutput, "qBittorrent Web API version ");
+			strcat(formattedOutput, response.memory);
+			strcat(formattedOutput, "\n");
+
+			free(response.memory);
+			response.memory = NULL;
+			response.size = 0;
+		}
+
+		response = GET("/app/buildInfo");
+		if (response.size) {
+			cJSON *json = cJSON_Parse(response.memory);
+			if (json != NULL && cJSON_IsObject(json)) {
+
+				cJSON *bitness = cJSON_GetObjectItemCaseSensitive(json, "bitness");
+				if (cJSON_IsNumber(bitness)) {
+					strcat(formattedOutput, "Bitness: ");
+					char bitStr[8];
+					snprintf(bitStr, 7, "%d", bitness->valueint);
+					strcat(formattedOutput, bitStr);
+					strcat(formattedOutput, "\n");
+				}
+
+				strcat(formattedOutput, "Linked against:\n");
+
+				cJSON *lib;
+				cJSON_ArrayForEach(lib, json) {
+					if (!strcmp(lib->string, "bitness"))
+						continue;
+
+					strcat(formattedOutput, "- ");
+					strcat(formattedOutput, lib->string);
+					strcat(formattedOutput, " ");
+					strcat(formattedOutput, lib->valuestring);
+					strcat(formattedOutput, "\n");
+				}
+			}
+
+			cJSON_Delete(json);
+			free(response.memory);
+			response.memory = NULL;
+			response.size = 0;
+		}
+
+		printf("%s", formattedOutput);
 	}
 	else {
 		fprintf(stderr, "Command \"%s\" is unknown, try \""PROGRAM_NAME" "CMD" help\".\n", *argv);

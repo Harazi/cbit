@@ -38,6 +38,7 @@ struct {
 	{ "sync", do_sync },
 	{ "transfer", do_transfer },
 	{ "torrents", do_torrents },
+	{ "session", do_session },
 	{ 0, NULL }
 };
 

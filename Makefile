@@ -3,7 +3,7 @@ PREFIX ?= /usr
 BINDIR ?= $(PREFIX)/bin
 DESTDIR ?=
 LIBS ?= `pkgconf --libs libcurl`
-objects = config.o auth.o callbacks.o app.o log.o transfer.o sync.o torrents.o cJSON.o
+objects = config.o auth.o callbacks.o app.o log.o transfer.o sync.o torrents.o cJSON.o session.c
 
 ifeq (${DEBUG}, 1)
 	CFLAGS += -ggdb
@@ -39,6 +39,9 @@ torrents.o: torrents.c
 	$(CC) $(CFLAGS) -c $<
 
 cJSON.o: cJSON/cJSON.c
+	$(CC) $(CFLAGS) -c $<
+
+session.o: session.c
 	$(CC) $(CFLAGS) -c $<
 
 install: qbit-cli

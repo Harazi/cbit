@@ -39,6 +39,7 @@ struct {
 	{ "transfer", do_transfer },
 	{ "torrents", do_torrents },
 	{ "session", do_session },
+	{ "settings", do_settings },
 	{ 0, NULL }
 };
 

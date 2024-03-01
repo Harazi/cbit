@@ -24,6 +24,7 @@ void do_settings(int argc, char **argv)
 {
 	struct MemoryStruct response; 
 	char formattedOutput[BUFSIZ] = "";
+	char numberToAscii[LARGEST_INT_LENGTH];
 
 	if (argc < 1 || !strcmp(*argv, "help")) {
 		settings_help();
@@ -48,9 +49,8 @@ void do_settings(int argc, char **argv)
 				if (cJSON_IsNull(key))
 					strcat(formattedOutput, "null");
 				if (cJSON_IsNumber(key)) {
-					char n[12];
-					snprintf(n, 11, "%d", key->valueint);
-					strcat(formattedOutput, n);
+					snprintf(numberToAscii, LARGEST_INT_LENGTH, "%.f", key->valuedouble);
+					strcat(formattedOutput, numberToAscii);
 				}
 				if (cJSON_IsObject(key))
 					strcat(formattedOutput, "[Object]");

@@ -2,6 +2,8 @@
 
 #define PROGRAM_NAME "qbit-cli"
 #define PROGRAM_VERSION "v0.1"
+// https://stackoverflow.com/q/1848700
+#define LARGEST_INT_LENGTH 18
 
 struct AUTH {
 	char *username;

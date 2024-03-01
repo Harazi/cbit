@@ -19,6 +19,7 @@ void do_session(int argc, char **argv)
 {
 	struct MemoryStruct response; 
 	char formattedOutput[BUFSIZ] = "";
+	char numberToAscii[LARGEST_INT_LENGTH];
 
 	if (argc < 1 || !strcmp(*argv, "help")) {
 		session_help();
@@ -34,7 +35,6 @@ void do_session(int argc, char **argv)
 		if (json != NULL && cJSON_IsObject(json)) {
 
 			cJSON *key;
-			char n[12];
 			cJSON_ArrayForEach(key, json) {
 				if (!strcmp(key->string, "connection_status")) {
 					strcat(formattedOutput, "Connection Status: ");
@@ -60,8 +60,8 @@ void do_session(int argc, char **argv)
 				else
 					strcat(formattedOutput, key->string);
 				strcat(formattedOutput, ": ");
-				snprintf(n, 7, "%d", key->valueint);
-				strcat(formattedOutput, n);
+				snprintf(numberToAscii, LARGEST_INT_LENGTH, "%.f", key->valuedouble);
+				strcat(formattedOutput, numberToAscii);
 				strcat(formattedOutput, "\n");
 			}
 		}
@@ -78,14 +78,13 @@ void do_session(int argc, char **argv)
 		if (json != NULL && cJSON_IsArray(json)) {
 
 			cJSON *obj;
-			char n[12];
 			struct MemoryStruct mem = { .size = 0, .memory = NULL };
 			cJSON_ArrayForEach(obj, json) {
 				cJSON *timestamp = cJSON_GetObjectItemCaseSensitive(obj, "timestamp");
 				cJSON *message = cJSON_GetObjectItemCaseSensitive(obj, "message");
 				if (cJSON_IsNumber(timestamp) && cJSON_IsString(message)) {
-					snprintf(n, 11, "%d", timestamp->valueint);
-					strcat(formattedOutput, n);
+					snprintf(numberToAscii, LARGEST_INT_LENGTH, "%.f", timestamp->valuedouble);
+					strcat(formattedOutput, numberToAscii);
 					strcat(formattedOutput, ": ");
 					strcat(formattedOutput, message->valuestring);
 					strcat(formattedOutput, "\n");

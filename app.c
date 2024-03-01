@@ -19,6 +19,7 @@ void do_app(int argc, char **argv)
 {
 	struct MemoryStruct response; 
 	char formattedOutput[BUFSIZ] = "";
+	char numberToAscii[LARGEST_INT_LENGTH];
 
 	if (argc < 1 || !strcmp(*argv, "help")) {
 		app_help();
@@ -63,9 +64,8 @@ void do_app(int argc, char **argv)
 				cJSON *bitness = cJSON_GetObjectItemCaseSensitive(json, "bitness");
 				if (cJSON_IsNumber(bitness)) {
 					strcat(formattedOutput, "Bitness: ");
-					char bitStr[8];
-					snprintf(bitStr, 7, "%d", bitness->valueint);
-					strcat(formattedOutput, bitStr);
+					snprintf(numberToAscii, LARGEST_INT_LENGTH, "%.f", bitness->valuedouble);
+					strcat(formattedOutput, numberToAscii);
 					strcat(formattedOutput, "\n");
 				}
 

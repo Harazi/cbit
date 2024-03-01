@@ -18,8 +18,6 @@ void app_help(void)
 void do_app(int argc, char **argv)
 {
 	struct MemoryStruct response; 
-	char formattedOutput[BUFSIZ] = "";
-	char numberToAscii[LARGEST_INT_LENGTH];
 
 	if (argc < 1 || !strcmp(*argv, "help")) {
 		app_help();
@@ -34,11 +32,9 @@ void do_app(int argc, char **argv)
 
 		response = GET("/app/version");
 		if (response.size) {
-			strcat(formattedOutput, "qBittorrent version");
 			// replace 'v' with a space
 			*response.memory = ' ';
-			strcat(formattedOutput, response.memory);
-			strcat(formattedOutput, "\n");
+			printf("qBittorrent version%s\n", response.memory);
 
 			free(response.memory);
 			response.memory = NULL;
@@ -47,9 +43,7 @@ void do_app(int argc, char **argv)
 
 		response = GET("/app/webapiVersion");
 		if (response.size) {
-			strcat(formattedOutput, "qBittorrent Web API version ");
-			strcat(formattedOutput, response.memory);
-			strcat(formattedOutput, "\n");
+			printf("qBittorrent Web API version %s\n", response.memory);
 
 			free(response.memory);
 			response.memory = NULL;
@@ -62,25 +56,17 @@ void do_app(int argc, char **argv)
 			if (json != NULL && cJSON_IsObject(json)) {
 
 				cJSON *bitness = cJSON_GetObjectItemCaseSensitive(json, "bitness");
-				if (cJSON_IsNumber(bitness)) {
-					strcat(formattedOutput, "Bitness: ");
-					snprintf(numberToAscii, LARGEST_INT_LENGTH, "%.f", bitness->valuedouble);
-					strcat(formattedOutput, numberToAscii);
-					strcat(formattedOutput, "\n");
-				}
+				if (cJSON_IsNumber(bitness))
+					printf("Bitness: %.f\n", bitness->valuedouble);
 
-				strcat(formattedOutput, "Linked against:\n");
+				printf("Linked against:\n");
 
 				cJSON *lib;
 				cJSON_ArrayForEach(lib, json) {
 					if (!strcmp(lib->string, "bitness"))
 						continue;
 
-					strcat(formattedOutput, "- ");
-					strcat(formattedOutput, lib->string);
-					strcat(formattedOutput, " ");
-					strcat(formattedOutput, lib->valuestring);
-					strcat(formattedOutput, "\n");
+					printf("- %s %s\n", lib->string, lib->valuestring);
 				}
 			}
 
@@ -89,8 +75,6 @@ void do_app(int argc, char **argv)
 			response.memory = NULL;
 			response.size = 0;
 		}
-
-		printf("%s", formattedOutput);
 	}
 	else {
 		fprintf(stderr, "Command \"%s\" is unknown, try \""PROGRAM_NAME" "CMD" help\".\n", *argv);

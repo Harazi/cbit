@@ -18,8 +18,6 @@ void session_help(void)
 void do_session(int argc, char **argv)
 {
 	struct MemoryStruct response; 
-	char formattedOutput[BUFSIZ] = "";
-	char numberToAscii[LARGEST_INT_LENGTH];
 
 	if (argc < 1 || !strcmp(*argv, "help")) {
 		session_help();
@@ -37,39 +35,33 @@ void do_session(int argc, char **argv)
 			cJSON *key;
 			cJSON_ArrayForEach(key, json) {
 				if (!strcmp(key->string, "connection_status")) {
-					strcat(formattedOutput, "Connection Status: ");
-					strcat(formattedOutput, key->valuestring);
-					strcat(formattedOutput, "\n");
+					printf("Connection Status: %s\n", key->valuestring);
 					continue;
 				}
 
 				if (!strcmp(key->string, "dht_nodes"))
-					strcat(formattedOutput, "DHT Nodes");
+					printf("DHT Nodes: ");
 				else if (!strcmp(key->string, "dl_info_data"))
-					strcat(formattedOutput, "Downloaded Bytes");
+					printf("Downloaded Bytes: ");
 				else if (!strcmp(key->string, "dl_info_speed"))
-					strcat(formattedOutput, "Download Speed");
+					printf("Download Speed: ");
 				else if (!strcmp(key->string, "dl_rate_limit"))
-					strcat(formattedOutput, "Download Limit");
+					printf("Download Limit: ");
 				else if (!strcmp(key->string, "up_info_data"))
-					strcat(formattedOutput, "Uploaded Bytes");
+					printf("Uploaded Bytes: ");
 				else if (!strcmp(key->string, "up_info_speed"))
-					strcat(formattedOutput, "Upload Speed");
+					printf("Upload Speed: ");
 				else if (!strcmp(key->string, "up_rate_limit"))
-					strcat(formattedOutput, "Upload Limit");
+					printf("Upload Limit: ");
 				else
-					strcat(formattedOutput, key->string);
-				strcat(formattedOutput, ": ");
-				snprintf(numberToAscii, LARGEST_INT_LENGTH, "%.f", key->valuedouble);
-				strcat(formattedOutput, numberToAscii);
-				strcat(formattedOutput, "\n");
+					printf("%s: ", key->string);
+
+				printf("%.f\n", key->valuedouble);
 			}
 		}
 
 		cJSON_Delete(json);
 		response.size = 0;
-
-		printf("%s", formattedOutput);
 	}
 	else if (!strcmp(*argv, "log")) {
 		response = GET("/log/main");
@@ -78,38 +70,15 @@ void do_session(int argc, char **argv)
 		if (json != NULL && cJSON_IsArray(json)) {
 
 			cJSON *obj;
-			struct MemoryStruct mem = { .size = 0, .memory = NULL };
 			cJSON_ArrayForEach(obj, json) {
 				cJSON *timestamp = cJSON_GetObjectItemCaseSensitive(obj, "timestamp");
 				cJSON *message = cJSON_GetObjectItemCaseSensitive(obj, "message");
-				if (cJSON_IsNumber(timestamp) && cJSON_IsString(message)) {
-					snprintf(numberToAscii, LARGEST_INT_LENGTH, "%.f", timestamp->valuedouble);
-					strcat(formattedOutput, numberToAscii);
-					strcat(formattedOutput, ": ");
-					strcat(formattedOutput, message->valuestring);
-					strcat(formattedOutput, "\n");
-					size_t messageLen = strlen(formattedOutput);
-
-					char *ptr = realloc(mem.memory, mem.size + messageLen + 1);
-					if (!ptr) {
-						/* out of memory! */
-						fprintf(stderr, "not enough memory (realloc returned NULL)\n");
-						exit(EXIT_FAILURE);
-					}
-
-					mem.memory = ptr;
-					memcpy(&(mem.memory[mem.size]), formattedOutput, messageLen);
-					formattedOutput[0] = '\0';
-					mem.size += messageLen;
-					mem.memory[mem.size] = 0;
-				}
+				if (cJSON_IsNumber(timestamp) && cJSON_IsString(message))
+					printf("%.f: %s\n", timestamp->valuedouble, message->valuestring);
 			}
 
 			cJSON_Delete(json);
 			response.size = 0;
-
-			printf("%s", mem.memory);
-			free(mem.memory);
 		}
 	}
 	else {

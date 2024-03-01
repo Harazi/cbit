@@ -23,7 +23,7 @@ void settings_help(void)
 void do_settings(int argc, char **argv)
 {
 	struct MemoryStruct response; 
-	char formattedOutput[BUFSIZ] = "";
+	char postField[BUFSIZ];
 	char numberToAscii[LARGEST_INT_LENGTH];
 
 	if (argc < 1 || !strcmp(*argv, "help")) {
@@ -40,26 +40,21 @@ void do_settings(int argc, char **argv)
 
 			cJSON *key;
 			cJSON_ArrayForEach(key, json) {
-				strcat(formattedOutput, key->string);
-				strcat(formattedOutput, "\t");
+				printf("%s:\t", key->string);
 				if (cJSON_IsString(key))
-					strcat(formattedOutput, key->valuestring);
+					printf("%s\n", key->valuestring);
 				if (cJSON_IsBool(key))
-					strcat(formattedOutput, key->valueint ? "true" : "false");
+					printf("%s\n", key->valueint ? "true" : "false");
 				if (cJSON_IsNull(key))
-					strcat(formattedOutput, "null");
-				if (cJSON_IsNumber(key)) {
-					snprintf(numberToAscii, LARGEST_INT_LENGTH, "%.f", key->valuedouble);
-					strcat(formattedOutput, numberToAscii);
-				}
+					printf("null\n");
+				if (cJSON_IsNumber(key))
+					printf("%.f\n", key->valuedouble);
 				if (cJSON_IsObject(key))
-					strcat(formattedOutput, "[Object]");
+					printf("[Object]\n");
 				if (cJSON_IsArray(key))
-					strcat(formattedOutput, "[Array]");
-				strcat(formattedOutput, "\n");
+					printf("[Array]\n");
 			}
 
-			printf("%s", formattedOutput);
 			cJSON_Delete(json);
 			free(response.memory);
 		}
@@ -67,7 +62,7 @@ void do_settings(int argc, char **argv)
 	}
 
 	bool postSettings = false;
-	strcat(formattedOutput, "json={");
+	strcat(postField, "json={");
 	for (int i = 0; i < argc; i++) {
 		char *value = strchr(argv[i], '=');
 		if (value == NULL)
@@ -76,33 +71,32 @@ void do_settings(int argc, char **argv)
 		value++;
 		postSettings = true;
 
-		strcat(formattedOutput, "\"");
-		strcat(formattedOutput, argv[i]);
-		strcat(formattedOutput, "\":");
+		strcat(postField, "\"");
+		strcat(postField, argv[i]);
+		strcat(postField, "\":");
 
 		if (isdigit(value[0]))
-			strcat(formattedOutput, value);
+			strcat(postField, value);
 		else if (!strcmp(value, "true") || !strcmp(value, "false") || !strcmp(value, "null"))
-			strcat(formattedOutput, value);
+			strcat(postField, value);
 		else {
-			strcat(formattedOutput, "\"");
-			strcat(formattedOutput, value);
-			strcat(formattedOutput, "\"");
+			strcat(postField, "\"");
+			strcat(postField, value);
+			strcat(postField, "\"");
 		}
 
-		strcat(formattedOutput, ",");
+		strcat(postField, ",");
 	}
 	if (postSettings) {
 		// Overwrite comma
-		formattedOutput[strlen(formattedOutput)-1] = '}';
+		postField[strlen(postField)-1] = '}';
 
-		response = POST("/app/setPreferences", formattedOutput);
+		response = POST("/app/setPreferences", postField);
 		if (response.size)
 			printf("%s\n", response.memory);
 		free(response.memory);
 		response.size = 0;
 		response.memory = NULL;
-		*formattedOutput = '\0';
 	}
 
 	response = GET("/app/preferences");
@@ -126,12 +120,12 @@ void do_settings(int argc, char **argv)
 			if (cJSON_IsNull(key))
 				printf("null\n");
 			if (cJSON_IsNumber(key)) {
-				printf("%d\n", key->valueint);
+				printf("%.f\n", key->valuedouble);
 			}
 			if (cJSON_IsObject(key))
-				printf("[Object]");
+				printf("[Object]\n");
 			if (cJSON_IsArray(key))
-				printf("[Array]");
+				printf("[Array]\n");
 		}
 	}
 	else

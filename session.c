@@ -12,12 +12,16 @@
 
 void session_help(void)
 {
-	printf("Usage: "PROGRAM_NAME" "CMD" { stats | log }\n");
+	printf(
+		"Usage: "PROGRAM_NAME" "CMD" { stats | log | limits }\n"
+		"       "PROGRAM_NAME" "CMD" set { downloadlimit | uploadlimit } LIMIT\n"
+	);
 }
 
 void do_session(int argc, char **argv)
 {
 	struct MemoryStruct response; 
+	char postField[BUFSIZ] = "";
 
 	if (argc < 1 || !strcmp(*argv, "help")) {
 		session_help();
@@ -79,6 +83,38 @@ void do_session(int argc, char **argv)
 
 			cJSON_Delete(json);
 			response.size = 0;
+		}
+	}
+	else if (!strcmp(*argv, "limits")) {
+		response = GET("/transfer/downloadLimit");
+		if (response.size) {
+			printf("Download: %s\n", response.memory);
+			free(response.memory);
+			response.size = 0;
+			response.memory = NULL;
+		}
+		response = GET("/transfer/uploadLimit");
+		if (response.size) {
+			printf("Upload: %s\n", response.memory);
+			free(response.memory);
+			response.size = 0;
+			response.memory = NULL;
+		}
+	}
+	else if (!strcmp(*argv, "set")) {
+		if (argc < 3) {
+			fprintf(stderr, "Missing limit argument\n");
+			exit(EXIT_FAILURE);
+		}
+		strcat(postField, "limit=");
+		strcat(postField, argv[2]);
+		if (!strcmp(argv[1], "downloadlimit"))
+			response = POST("/transfer/setDownloadLimit", postField);
+		else if (!strcmp(argv[1], "uploadlimit"))
+			response = POST("/transfer/setUploadLimit", postField);
+		else {
+			session_help();
+			exit(EXIT_FAILURE);
 		}
 	}
 	else {

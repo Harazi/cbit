@@ -4,7 +4,6 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <errno.h>
-#include <ctype.h>
 #include <curl/curl.h>
 #include "config.h"
 #include "do_commands.h"
@@ -35,8 +34,6 @@ struct {
 	{ "config", do_config },
 	{ "app", do_app },
 	{ "log", do_log },
-	{ "sync", do_sync },
-	{ "transfer", do_transfer },
 	{ "torrents", do_torrents },
 	{ "session", do_session },
 	{ "settings", do_settings },
@@ -113,8 +110,8 @@ int main(int argc, char *argv[])
 	curl_easy_setopt(curl, CURLOPT_COOKIEFILE, ""); // enable cookie engine
 
 	if (argc == 0) {
-		char *vec[] = { "info" };
-		do_transfer(1, vec);
+		char *vec[] = { "stats" };
+		do_session(1, vec);
 		goto CLEANUP;
 	}
 

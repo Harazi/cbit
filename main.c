@@ -4,6 +4,8 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <errno.h>
+#include <unistd.h>
+#include <stdbool.h>
 #include <curl/curl.h>
 #include "config.h"
 #include "do_commands.h"
@@ -42,31 +44,37 @@ struct {
 
 int main(int argc, char *argv[])
 {
+	config.flags.color = isatty(STDOUT_FILENO);
+
 	argc--;
 	argv++;
-
-	for (int n = 0; n < argc; n++) {
-		if (!strcmp(argv[n], "-v") || !strcmp(argv[n], "--version")) {
+	int parsedOptions = 0;
+	for (; parsedOptions < argc; parsedOptions++) {
+		if (!strcmp(argv[parsedOptions], "-v") || !strcmp(argv[parsedOptions], "--version")) {
 			printf("%s %s\n", PROGRAM_NAME, PROGRAM_VERSION);
 			return EXIT_SUCCESS;
 		}
-		if (!strcmp(argv[n], "-h") || !strcmp(argv[n], "--help")) {
+		if (!strcmp(argv[parsedOptions], "-h") || !strcmp(argv[parsedOptions], "--help")) {
 			print_help(stdout);
 			return EXIT_SUCCESS;
 		}
-		if (!strcmp(argv[n], "-c") || !strcmp(argv[n], "--config")) {
-			if (n+1 >= argc) {
-				fprintf(stderr, "Incomplete option %s\n", argv[n]);
+		if (!strcmp(argv[parsedOptions], "-c") || !strcmp(argv[parsedOptions], "--config")) {
+			if (parsedOptions+1 >= argc) {
+				fprintf(stderr, "Incomplete option %s\n", argv[parsedOptions]);
 				return EXIT_FAILURE;
 			}
-			strcat(confFile, argv[++n]);
+			strcat(confFile, argv[++parsedOptions]);
+			continue;
+		}
+		if (!strcmp(argv[parsedOptions], "-C") || !strcmp(argv[parsedOptions], "--color")) {
+			config.flags.color = true;
 			continue;
 		}
 
-		argc -= n;
-		argv += n;
 		break;
 	}
+	argc -= parsedOptions;
+	argv += parsedOptions;
 
 	if (*confFile == '\0') {
 		char *confDir = getenv("XDG_CONFIG_DIR");

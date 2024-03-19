@@ -297,3 +297,10 @@ void do_config(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 }
+
+inline void print_color(enum COLOR_NAME num)
+{
+	if (!config.flags.color)
+		return;
+	printf("\e[%dm", num);
+}

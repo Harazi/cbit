@@ -38,28 +38,41 @@ void do_session(int argc, char **argv)
 
 			cJSON *key;
 			cJSON_ArrayForEach(key, json) {
+				print_color(COLOR_BLUE);
 				if (!strcmp(key->string, "connection_status")) {
-					printf("Connection Status: %s\n", key->valuestring);
+					printf("Connection Status");
+					print_color(COLOR_RESET);
+					printf(": ");
+					if (!strcmp(key->valuestring, "disconnected"))
+						print_color(COLOR_RED);
+					if (!strcmp(key->valuestring, "firewalled"))
+						print_color(COLOR_YELLOW);
+					if (!strcmp(key->valuestring, "connected"))
+						print_color(COLOR_GREEN);
+					printf("%s\n", key->valuestring);
+					print_color(COLOR_RESET);
 					continue;
 				}
 
 				if (!strcmp(key->string, "dht_nodes"))
-					printf("DHT Nodes: ");
+					printf("DHT Nodes");
 				else if (!strcmp(key->string, "dl_info_data"))
-					printf("Downloaded Bytes: ");
+					printf("Downloaded Bytes");
 				else if (!strcmp(key->string, "dl_info_speed"))
-					printf("Download Speed: ");
+					printf("Download Speed");
 				else if (!strcmp(key->string, "dl_rate_limit"))
-					printf("Download Limit: ");
+					printf("Download Limit");
 				else if (!strcmp(key->string, "up_info_data"))
-					printf("Uploaded Bytes: ");
+					printf("Uploaded Bytes");
 				else if (!strcmp(key->string, "up_info_speed"))
-					printf("Upload Speed: ");
+					printf("Upload Speed");
 				else if (!strcmp(key->string, "up_rate_limit"))
-					printf("Upload Limit: ");
+					printf("Upload Limit");
 				else
-					printf("%s: ", key->string);
+					printf("%s", key->string);
 
+				print_color(COLOR_RESET);
+				printf(": ");
 				printf("%.f\n", key->valuedouble);
 			}
 		}

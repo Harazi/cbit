@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+#include <time.h>
 #include <unistd.h>
 #include <curl/curl.h>
 #include "cJSON/cJSON.h"
@@ -121,7 +122,49 @@ void do_torrents(int argc, char **argv)
 		strcat(postField, "hash=");
 		strcat(postField, argv[1]);
 		response = POST("/torrents/properties", postField);
-		goto PRINT_AND_CLEANUP;
+		cJSON *json = cJSON_Parse(response.memory);
+		if (cJSON_IsObject(json)) {
+			char date[BUFSIZ];
+			time_t time;
+			int idx;
+			cJSON *property;
+			printf("%s\n", cJSON_GetObjectItemCaseSensitive(json, "name")->valuestring);
+			printf("\tHash: %s\n", cJSON_GetObjectItemCaseSensitive(json, "hash")->valuestring);
+
+			time = cJSON_GetObjectItemCaseSensitive(json, "addition_date")->valuedouble;
+			strftime(date, sizeof(date), "%a, %d %b %Y %T %z", localtime(&time));
+			printf("\tAdded on: %s\n", date);
+
+			time = cJSON_GetObjectItemCaseSensitive(json, "completion_date")->valuedouble;
+			strftime(date, sizeof(date), "%a, %d %b %Y %T %z", localtime(&time));
+			printf("\tCompleted on: %s\n", date);
+
+			property = cJSON_GetObjectItemCaseSensitive(json, "total_size");
+			idx = human_size(&property->valuedouble);
+			printf("\tTotal Size: %.2f%s\n", property->valuedouble, sizeSuffixes[idx]);
+			property = cJSON_GetObjectItemCaseSensitive(json, "total_downloaded");
+			idx = human_size(&property->valuedouble);
+			printf("\tDownloaded: %.2f%s\n", property->valuedouble, sizeSuffixes[idx]);
+			property = cJSON_GetObjectItemCaseSensitive(json, "total_uploaded");
+			idx = human_size(&property->valuedouble);
+			printf("\tUploaded: %.2f%s\n", property->valuedouble, sizeSuffixes[idx]);
+
+			property = cJSON_GetObjectItemCaseSensitive(json, "dl_speed");
+			idx = human_size(&property->valuedouble);
+			printf("\tDown speed: %.2f%s/s\n", property->valuedouble, sizeSuffixes[idx]);
+			property = cJSON_GetObjectItemCaseSensitive(json, "up_speed");
+			idx = human_size(&property->valuedouble);
+			printf("\tUp speed: %.2f%s/s\n", property->valuedouble, sizeSuffixes[idx]);
+
+			printf("\tRatio: %.2f\n", cJSON_GetObjectItemCaseSensitive(json, "share_ratio")->valuedouble); 
+			printf("\tConnections: %d\n", cJSON_GetObjectItemCaseSensitive(json, "nb_connections")->valueint); 
+
+			cJSON_free(json);
+			free(response.memory);
+			return;
+		}
+		else
+			goto PRINT_AND_CLEANUP;
 	}
 
 	if (!strcmp(*argv, "add")) {

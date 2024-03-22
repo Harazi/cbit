@@ -12,6 +12,7 @@
 struct CONFIG config;
 CURL *curl;
 char confFile[BUFSIZ] = "";
+const char *sizeSuffixes[] = { "B", "KiB", "MiB", "GiB", "TiB" };
 
 void create_config_file(const char *path)
 {
@@ -303,4 +304,16 @@ inline void print_color(enum COLOR_NAME num)
 	if (!config.flags.color)
 		return;
 	printf("\e[%dm", num);
+}
+
+inline int human_size(double *bytes)
+{
+	int suffixIndex = 0;
+	while(*bytes > 1024) {
+		if (suffixIndex == sizeof(sizeSuffixes)-1)
+			break;
+		*bytes /= 1024;
+		suffixIndex++;
+	}
+	return suffixIndex;
 }

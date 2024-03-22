@@ -230,12 +230,14 @@ void do_torrents(int argc, char **argv)
 			strcat(postField, "hashes=");
 			strcat(postField, argv[2]);
 
+			int idx;
 			response = POST("/torrents/downloadLimit", postField);
 			cJSON *json = cJSON_Parse(response.memory);
 			if (json != NULL && cJSON_IsObject(json)) {
 				cJSON *limit = cJSON_GetObjectItemCaseSensitive(json, argv[2]);
 				if (cJSON_IsNumber(limit)) {
-					printf("Download: %.f\n", limit->valuedouble);
+					idx = human_size(&limit->valuedouble);
+					printf("Download: %.2f%s/s\n", limit->valuedouble, sizeSuffixes[idx]);
 				}
 
 				cJSON_free(json);
@@ -249,7 +251,8 @@ void do_torrents(int argc, char **argv)
 			if (json != NULL && cJSON_IsObject(json)) {
 				cJSON *limit = cJSON_GetObjectItemCaseSensitive(json, argv[2]);
 				if (cJSON_IsNumber(limit)) {
-					printf("Upload: %.f\n", limit->valuedouble);
+					idx = human_size(&limit->valuedouble);
+					printf("Upload: %.2f%s/s\n", limit->valuedouble, sizeSuffixes[idx]);
 				}
 
 				cJSON_free(json);

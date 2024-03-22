@@ -36,6 +36,8 @@ void do_session(int argc, char **argv)
 		cJSON *json = cJSON_Parse(response.memory);
 		if (json != NULL && cJSON_IsObject(json)) {
 
+			int idx = -1;
+			bool perSecond = false;
 			cJSON *key;
 			cJSON_ArrayForEach(key, json) {
 				print_color(COLOR_BLUE);
@@ -54,26 +56,40 @@ void do_session(int argc, char **argv)
 					continue;
 				}
 
-				if (!strcmp(key->string, "dht_nodes"))
+				idx = human_size(&key->valuedouble);
+
+				if (!strcmp(key->string, "dht_nodes")) {
 					printf("DHT Nodes");
+					idx = -1;
+				}
 				else if (!strcmp(key->string, "dl_info_data"))
 					printf("Downloaded Bytes");
-				else if (!strcmp(key->string, "dl_info_speed"))
+				else if (!strcmp(key->string, "dl_info_speed")) {
 					printf("Download Speed");
-				else if (!strcmp(key->string, "dl_rate_limit"))
+					perSecond = true;
+				}
+				else if (!strcmp(key->string, "dl_rate_limit")) {
 					printf("Download Limit");
+					perSecond = true;
+				}
 				else if (!strcmp(key->string, "up_info_data"))
 					printf("Uploaded Bytes");
-				else if (!strcmp(key->string, "up_info_speed"))
+				else if (!strcmp(key->string, "up_info_speed")) {
 					printf("Upload Speed");
-				else if (!strcmp(key->string, "up_rate_limit"))
+					perSecond = true;
+				}
+				else if (!strcmp(key->string, "up_rate_limit")) {
 					printf("Upload Limit");
+					perSecond = true;
+				}
 				else
 					printf("%s", key->string);
 
 				print_color(COLOR_RESET);
 				printf(": ");
-				printf("%.f\n", key->valuedouble);
+				printf("%.*f%s%s\n", idx >= 0 ? 2 : 0, key->valuedouble, idx >= 0 ? sizeSuffixes[idx] : "", idx >= 0 && perSecond ? "/s" : "");
+				idx = -1;
+				perSecond = false;
 			}
 		}
 
@@ -99,16 +115,22 @@ void do_session(int argc, char **argv)
 		}
 	}
 	else if (!strcmp(*argv, "limits")) {
+		double speed;
+		int idx;
 		response = GET("/transfer/downloadLimit");
 		if (response.size) {
-			printf("Download: %s\n", response.memory);
+			speed = atoll(response.memory);
+			idx = human_size(&speed);
+			printf("Download: %.2f%s/s\n", speed, sizeSuffixes[idx]);
 			free(response.memory);
 			response.size = 0;
 			response.memory = NULL;
 		}
 		response = GET("/transfer/uploadLimit");
 		if (response.size) {
-			printf("Upload: %s\n", response.memory);
+			speed = atoll(response.memory);
+			idx = human_size(&speed);
+			printf("Upload: %.2f%s/s\n", speed, sizeSuffixes[idx]);
 			free(response.memory);
 			response.size = 0;
 			response.memory = NULL;

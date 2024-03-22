@@ -29,7 +29,9 @@ extern struct CONFIG config;
 extern CURL *curl;
 extern char confFile[];
 enum COLOR_NAME { COLOR_RESET = 0, COLOR_RED = 31, COLOR_GREEN, COLOR_YELLOW, COLOR_BLUE };
+extern const char *sizeSuffixes[];
 
 void create_config_file(const char *path);
 void parse_config_file(const char *path);
 void print_color(enum COLOR_NAME);
+int human_size(double *bytes);

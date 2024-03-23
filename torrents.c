@@ -261,7 +261,42 @@ void do_torrents(int argc, char **argv)
 			strcat(postField, "hash=");
 			strcat(postField, argv[2]);
 			response = POST("/torrents/files", postField);
-			goto PRINT_AND_CLEANUP;
+			cJSON *json = cJSON_Parse(response.memory);
+			if (cJSON_IsArray(json)) {
+				printf("Index Size       Priority Progress File\n");
+				int idx;
+				char adjustBuf[LARGEST_INT_LENGTH];
+				char adjustBuf2[LARGEST_INT_LENGTH];
+				char *priorities[] = { "Skip", "Normal", "", "", "", "", "High", "Maximal" };
+				cJSON *file;
+				cJSON_ArrayForEach(file, json) {
+					if (!cJSON_IsObject(file))
+						continue;
+					idx = human_size(&cJSON_GetObjectItemCaseSensitive(file, "size")->valuedouble);
+					snprintf(
+						adjustBuf, LARGEST_INT_LENGTH, "%.2f%s",
+						cJSON_GetObjectItemCaseSensitive(file, "size")->valuedouble,
+						sizeSuffixes[idx]
+					);
+					snprintf(
+						adjustBuf2, LARGEST_INT_LENGTH, "%.1f%%",
+						cJSON_GetObjectItemCaseSensitive(file, "priority")->valuedouble * 100
+					);
+					printf(
+						"%-5d %-10s %-8s %-8s %s\n",
+						cJSON_GetObjectItemCaseSensitive(file, "index")->valueint,
+						adjustBuf,
+						priorities[cJSON_GetObjectItemCaseSensitive(file, "priority")->valueint],
+						adjustBuf2,
+						cJSON_GetObjectItemCaseSensitive(file, "name")->valuestring
+					);
+				}
+				cJSON_free(json);
+				free(response.memory);
+				return;
+			}
+			else
+				goto PRINT_AND_CLEANUP;
 		}
 		if (!strcmp(argv[1], "pieces")) {
 			strcat(postField, "hash=");

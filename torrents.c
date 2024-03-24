@@ -1,3 +1,4 @@
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -55,14 +56,16 @@ void torrents_help(void)
 {
 	printf(
 		"Usage: "PROGRAM_NAME" "CMD" list\n"
-		"       "PROGRAM_NAME" "CMD" info HASH\n"
-		"       "PROGRAM_NAME" "CMD" { pause | resume | recheck | reannounce } HASH...\n"
+		"       "PROGRAM_NAME" "CMD" info QUERY\n"
+		"       "PROGRAM_NAME" "CMD" { pause | resume | recheck | reannounce } QUERY...\n"
 		"       "PROGRAM_NAME" "CMD" add [ADD_OPTIONS] { URL | FILE }...\n"
-		"       "PROGRAM_NAME" "CMD" delete [DELETE_OPTIONS] HASH...\n"
-		"       "PROGRAM_NAME" "CMD" rename NewName HASH\n"
-		"       "PROGRAM_NAME" "CMD" show { webseeds | files | pieces | limits | trackers | category } HASH\n"
-		"       "PROGRAM_NAME" "CMD" set { downloadlimit | uploadlimit | trackers | category } NewValue HASH\n"
-		"       "PROGRAM_NAME" "CMD" toggle { sequential | firstandlastpieces | superseeding | forcestart | automanagement } HASH\n"
+		"       "PROGRAM_NAME" "CMD" delete [DELETE_OPTIONS] QUERY...\n"
+		"       "PROGRAM_NAME" "CMD" rename NewName QUERY\n"
+		"       "PROGRAM_NAME" "CMD" show { webseeds | files | pieces | limits | trackers | category } QUERY\n"
+		"       "PROGRAM_NAME" "CMD" set { downloadlimit | uploadlimit | trackers | category } NewValue QUERY\n"
+		"       "PROGRAM_NAME" "CMD" toggle { sequential | firstandlastpieces | superseeding | forcestart | automanagement } QUERY\n"
+		"\n"
+		"QUERY: A portion from the torrent's hash or name\n"
 		"\n"
 		"ADD_OPTIONS:\n"
 	);
@@ -76,6 +79,38 @@ void torrents_help(void)
 		"  -F %-16s Delete downloaded files\n",
 		""
 	);
+}
+
+static char *get_torrent_hash(const char *query)
+{
+	if (strlen(query) == 40) {
+		int n = 0;
+		for (; n < 40; n++)
+			if (!isxdigit(query[n]))
+				break;
+		if (n == 40)
+			return strdup(query);
+	}
+
+	char *found = NULL;
+	struct MemoryStruct response = GET("/torrents/info");
+	cJSON *json = cJSON_Parse(response.memory);
+	if (cJSON_IsArray(json)) {
+		cJSON *t;
+		cJSON_ArrayForEach(t, json) {
+			if (
+				strcasestr(cJSON_GetObjectItemCaseSensitive(t, "hash")->valuestring, query) != NULL ||
+				strcasestr(cJSON_GetObjectItemCaseSensitive(t, "name")->valuestring, query) != NULL
+			) {
+				found = strdup(cJSON_GetObjectItemCaseSensitive(t, "hash")->valuestring);
+				break;
+			}
+		}
+	}
+	
+	cJSON_free(json);
+	free(response.memory);
+	return found;
 }
 
 void do_torrents(int argc, char **argv)
@@ -106,10 +141,17 @@ void do_torrents(int argc, char **argv)
 		if (strcmp(*argv, cmds[i]))
 			continue;
 
+		char *hash;
 		strcat(postField, "hashes=");
 		for (int i = 1; i < argc; i++) {
-			strcat(postField, argv[i]);
+			hash = get_torrent_hash(argv[i]);
+			if (hash == NULL) {
+				fprintf(stderr, "Didn't find a torrent with this query: %s\n", argv[1]); 
+				continue;
+			}
+			strcat(postField, hash);
 			strcat(postField, "|");
+			free(hash);
 		}
 		postField[strlen(postField)-1] = '\0';
 
@@ -119,8 +161,15 @@ void do_torrents(int argc, char **argv)
 	}
 
 	if (!strcmp(*argv, "info")) {
+		char *hash = get_torrent_hash(argv[1]);
+		if (hash == NULL) {
+			fprintf(stderr, "Didn't find a torrent with this query: %s\n", argv[1]);
+			exit(EXIT_FAILURE);
+		}
 		strcat(postField, "hash=");
-		strcat(postField, argv[1]);
+		strcat(postField, hash);
+		free(hash);
+
 		response = POST("/torrents/properties", postField);
 		cJSON *json = cJSON_Parse(response.memory);
 		if (cJSON_IsObject(json)) {
@@ -243,6 +292,11 @@ void do_torrents(int argc, char **argv)
 	}
 
 	if (!strcmp(*argv, "rename") && argc == 3) {
+		char *hash = get_torrent_hash(argv[2]);
+		if (hash == NULL) {
+			fprintf(stderr, "Didn't find a torrent with this query: %s\n", argv[2]);
+			exit(EXIT_FAILURE);
+		}
 		strcat(postField, "hash=");
 		strcat(postField, argv[2]);
 		strcat(postField, "&name=");
@@ -253,15 +307,23 @@ void do_torrents(int argc, char **argv)
 	}
 
 	if (!strcmp(*argv, "show") && argc == 3) {
+		char *hash = get_torrent_hash(argv[2]);
+		if (hash == NULL) {
+			fprintf(stderr, "Didn't find a torrent with this query: %s\n", argv[2]);
+			exit(EXIT_FAILURE);
+		}
+
 		if (!strcmp(argv[1], "webseeds")) {
 			strcat(postField, "hash=");
-			strcat(postField, argv[2]);
+			strcat(postField, hash);
+			free(hash);
 			response = POST("/torrents/webseeds", postField);
 			goto PRINT_AND_CLEANUP;
 		}
 		if (!strcmp(argv[1], "files")) {
 			strcat(postField, "hash=");
-			strcat(postField, argv[2]);
+			strcat(postField, hash);
+			free(hash);
 			response = POST("/torrents/files", postField);
 			cJSON *json = cJSON_Parse(response.memory);
 			if (cJSON_IsArray(json)) {
@@ -302,13 +364,15 @@ void do_torrents(int argc, char **argv)
 		}
 		if (!strcmp(argv[1], "pieces")) {
 			strcat(postField, "hash=");
-			strcat(postField, argv[2]);
+			strcat(postField, hash);
+			free(hash);
 			response = POST("/torrents/pieceStates", postField);
 			goto PRINT_AND_CLEANUP;
 		}
 		if (!strcmp(argv[1], "limits")) {
 			strcat(postField, "hashes=");
-			strcat(postField, argv[2]);
+			strcat(postField, hash);
+			free(hash);
 
 			int idx;
 			response = POST("/torrents/downloadLimit", postField);
@@ -345,7 +409,8 @@ void do_torrents(int argc, char **argv)
 		}
 		if (!strcmp(argv[1], "trackers")) {
 			strcat(postField, "hash=");
-			strcat(postField, argv[2]);
+			strcat(postField, hash);
+			free(hash);
 			response = POST("/torrents/trackers", postField);
 			cJSON *json = cJSON_Parse(response.memory);
 			if (cJSON_IsArray(json)) {
@@ -377,24 +442,33 @@ void do_torrents(int argc, char **argv)
 			if (cJSON_IsArray(json)) {
 				cJSON *torrent;
 				cJSON_ArrayForEach(torrent, json) {
-					if (!strcmp(argv[2], cJSON_GetObjectItemCaseSensitive(torrent, "hash")->valuestring)) {
+					if (!strcmp(hash, cJSON_GetObjectItemCaseSensitive(torrent, "hash")->valuestring)) {
 						printf("%s\n", cJSON_GetObjectItemCaseSensitive(torrent, "category")->valuestring);
 						break;
 					}
 				}
 			}
+			free(hash);
 			cJSON_free(json);
 			free(response.memory);
 			response.size = 0;
 			response.memory = NULL;
 			goto PRINT_AND_CLEANUP;
 		}
+		free(hash);
 	}
 
 	if (!strcmp(*argv, "set") && argc > 3) {
+		char *hash = get_torrent_hash(argv[3]);
+		if (hash == NULL && strcmp(argv[1], "trackers")) {
+			fprintf(stderr, "Didn't find a torrent with this query: %s\n", argv[2]);
+			exit(EXIT_FAILURE);
+		}
+
 		if (!strcmp(argv[1], "downloadlimit")) {
 			strcat(postField, "hashes=");
-			strcat(postField, argv[3]);
+			strcat(postField, hash);
+			free(hash);
 			strcat(postField, "&limit=");
 			strcat(postField, argv[2]);
 			response = POST("/torrents/setDownloadLimit", postField);
@@ -402,13 +476,20 @@ void do_torrents(int argc, char **argv)
 		}
 		if (!strcmp(argv[1], "uploadlimit")) {
 			strcat(postField, "hashes=");
-			strcat(postField, argv[3]);
+			strcat(postField, hash);
+			free(hash);
 			strcat(postField, "&limit=");
 			strcat(postField, argv[2]);
 			response = POST("/torrents/setUploadLimit", postField);
 			goto PRINT_AND_CLEANUP;
 		}
 		if (!strcmp(argv[1], "trackers")) {
+			char *hash = get_torrent_hash(argv[argc-1]);
+			if (hash == NULL) {
+				fprintf(stderr, "Didn't find a torrent with this query: %s\n", argv[argc-1]);
+				exit(EXIT_FAILURE);
+			}
+
 			bool removeAll = false;
 			char *toRemove[256];
 			char *toAdd[256];
@@ -433,7 +514,7 @@ void do_torrents(int argc, char **argv)
 			if (removeAll) {
 				removeCounter = 0;
 				strcat(postField, "hash=");
-				strcat(postField, argv[argc-1]);
+				strcat(postField, hash);
 				response = POST("/torrents/trackers", postField);
 				cJSON *json = cJSON_Parse(response.memory);
 				if (cJSON_IsArray(json)) {
@@ -466,7 +547,7 @@ void do_torrents(int argc, char **argv)
 			}
 
 			strcat(postField, "hash=");
-			strcat(postField, argv[argc-1]);
+			strcat(postField, hash);
 			strcat(postField, "&urls=");
 			for (int i = 0; i < removeCounter; i++) {
 				strcat(postField, toRemove[i]);
@@ -482,7 +563,7 @@ void do_torrents(int argc, char **argv)
 
 			if (postField[0] == '\0') {
 				strcat(postField, "hash=");
-				strcat(postField, argv[argc-1]);
+				strcat(postField, hash);
 				strcat(postField, "&urls=");
 			}
 
@@ -496,11 +577,13 @@ void do_torrents(int argc, char **argv)
 				postField[strlen(postField)-3] = '\0';
 				response = POST("/torrents/addTrackers", postField);
 			}
+			free(hash);
 			goto PRINT_AND_CLEANUP;
 		}
 		if (!strcmp(argv[1], "category")) {
 			strcat(postField, "hashes=");
-			strcat(postField, argv[3]);
+			strcat(postField, hash);
+			free(hash);
 			strcat(postField, "&category=");
 			strcat(postField, argv[2]);
 			response = POST("/torrents/setCategory", postField);
@@ -509,15 +592,23 @@ void do_torrents(int argc, char **argv)
 	}
 
 	if (!strcmp(*argv, "toggle") && argc == 3) {
+		char *hash = get_torrent_hash(argv[2]);
+		if (hash == NULL) {
+			fprintf(stderr, "Didn't find a torrent with this query: %s\n", argv[2]);
+			exit(EXIT_FAILURE);
+		}
+
 		if (!strcmp(argv[1], "sequential")) {
-			strcat(postField, "hashes");
-			strcat(postField, argv[2]);
+			strcat(postField, "hashes=");
+			strcat(postField, hash);
+			free(hash);
 			response = POST("/torrents/toggleSequentialDownload", postField);
 			goto PRINT_AND_CLEANUP;
 		}
 		if (!strcmp(argv[1], "firstandlastpieces")) {
-			strcat(postField, "hashes");
-			strcat(postField, argv[2]);
+			strcat(postField, "hashes=");
+			strcat(postField, hash);
+			free(hash);
 			response = POST("/torrents/toggleFirstLastPiecePrio", postField);
 			goto PRINT_AND_CLEANUP;
 		}
@@ -528,7 +619,7 @@ void do_torrents(int argc, char **argv)
 			if (cJSON_IsArray(json)) {
 				cJSON *torrent;
 				cJSON_ArrayForEach(torrent, json) {
-					if (!strcmp(argv[2], cJSON_GetObjectItemCaseSensitive(torrent, "hash")->valuestring)) {
+					if (!strcmp(hash, cJSON_GetObjectItemCaseSensitive(torrent, "hash")->valuestring)) {
 						wasEnabled = cJSON_GetObjectItemCaseSensitive(torrent, "super_seeding")->valueint;
 						break;
 					}
@@ -540,7 +631,8 @@ void do_torrents(int argc, char **argv)
 			response.memory = NULL;
 
 			strcat(postField, "hashes=");
-			strcat(postField, argv[2]);
+			strcat(postField, hash);
+			free(hash);
 			strcat(postField, "&value=");
 			strcat(postField, wasEnabled ? "false" : "true");
 			response = POST("/torrents/setSuperSeeding", postField);
@@ -554,7 +646,7 @@ void do_torrents(int argc, char **argv)
 			if (cJSON_IsArray(json)) {
 				cJSON *torrent;
 				cJSON_ArrayForEach(torrent, json) {
-					if (!strcmp(argv[2], cJSON_GetObjectItemCaseSensitive(torrent, "hash")->valuestring)) {
+					if (!strcmp(hash, cJSON_GetObjectItemCaseSensitive(torrent, "hash")->valuestring)) {
 						wasEnabled = cJSON_GetObjectItemCaseSensitive(torrent, "force_start")->valueint;
 						break;
 					}
@@ -566,7 +658,8 @@ void do_torrents(int argc, char **argv)
 			response.memory = NULL;
 
 			strcat(postField, "hashes=");
-			strcat(postField, argv[2]);
+			strcat(postField, hash);
+			free(hash);
 			strcat(postField, "&value=");
 			strcat(postField, wasEnabled ? "false" : "true");
 			response = POST("/torrents/setForceStart", postField);
@@ -580,7 +673,7 @@ void do_torrents(int argc, char **argv)
 			if (cJSON_IsArray(json)) {
 				cJSON *torrent;
 				cJSON_ArrayForEach(torrent, json) {
-					if (!strcmp(argv[2], cJSON_GetObjectItemCaseSensitive(torrent, "hash")->valuestring)) {
+					if (!strcmp(hash, cJSON_GetObjectItemCaseSensitive(torrent, "hash")->valuestring)) {
 						wasEnabled = cJSON_GetObjectItemCaseSensitive(torrent, "auto_tmm")->valueint;
 						break;
 					}
@@ -592,7 +685,8 @@ void do_torrents(int argc, char **argv)
 			response.memory = NULL;
 
 			strcat(postField, "hashes=");
-			strcat(postField, argv[2]);
+			strcat(postField, hash);
+			free(hash);
 			strcat(postField, "&enable=");
 			strcat(postField, wasEnabled ? "false" : "true");
 			response = POST("/torrents/setAutoManagement", postField);

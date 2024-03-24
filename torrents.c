@@ -136,8 +136,10 @@ void do_torrents(int argc, char **argv)
 			printf("\tAdded on: %s\n", date);
 
 			time = cJSON_GetObjectItemCaseSensitive(json, "completion_date")->valuedouble;
-			strftime(date, sizeof(date), "%a, %d %b %Y %T %z", localtime(&time));
-			printf("\tCompleted on: %s\n", date);
+			if (time != -1) {
+				strftime(date, sizeof(date), "%a, %d %b %Y %T %z", localtime(&time));
+				printf("\tCompleted on: %s\n", date);
+			}
 
 			property = cJSON_GetObjectItemCaseSensitive(json, "total_size");
 			idx = human_size(&property->valuedouble);

@@ -347,7 +347,29 @@ void do_torrents(int argc, char **argv)
 			strcat(postField, "hash=");
 			strcat(postField, argv[2]);
 			response = POST("/torrents/trackers", postField);
-			goto PRINT_AND_CLEANUP;
+			cJSON *json = cJSON_Parse(response.memory);
+			if (cJSON_IsArray(json)) {
+				printf("Tier Peers Seeders Leechers Downloaded Status      Url\n");
+				const char *status[] = { "Disabled", "No contact", "Working", "Updating", "Not working" };
+				cJSON *tracker;
+				cJSON_ArrayForEach(tracker, json) {
+					printf(
+						"%-4d %-5d %-7d %-8d %-10d %-11s %s\n",
+						cJSON_GetObjectItemCaseSensitive(tracker, "tier")->valueint,
+						cJSON_GetObjectItemCaseSensitive(tracker, "num_peers")->valueint,
+						cJSON_GetObjectItemCaseSensitive(tracker, "num_seeds")->valueint,
+						cJSON_GetObjectItemCaseSensitive(tracker, "num_leeches")->valueint,
+						cJSON_GetObjectItemCaseSensitive(tracker, "num_downloaded")->valueint,
+						status[cJSON_GetObjectItemCaseSensitive(tracker, "status")->valueint],
+						cJSON_GetObjectItemCaseSensitive(tracker, "url")->valuestring
+					);
+				}
+				cJSON_free(json);
+				free(response.memory);
+				return;
+			}
+			else
+				goto PRINT_AND_CLEANUP;
 		}
 		if (!strcmp(argv[1], "category")) {
 			response = GET("/torrents/info");

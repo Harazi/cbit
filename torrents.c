@@ -128,7 +128,26 @@ void do_torrents(int argc, char **argv)
 
 	if (!strcmp(*argv, "list")) {
 		response = GET("/torrents/info");
-		goto PRINT_AND_CLEANUP;
+		cJSON *json = cJSON_Parse(response.memory);
+		if (cJSON_IsArray(json)) {
+			printf("Hash     Progress Name\n");
+			cJSON *t;
+			cJSON_ArrayForEach(t, json) {
+				printf(
+					"%.8s %5.1f%%   %s\n",
+					cJSON_GetObjectItemCaseSensitive(t, "hash")->valuestring,
+					cJSON_GetObjectItemCaseSensitive(t, "completed")->valuedouble /
+						cJSON_GetObjectItemCaseSensitive(t, "size")->valuedouble *
+						100,
+					cJSON_GetObjectItemCaseSensitive(t, "name")->valuestring
+				);
+			}
+			cJSON_free(json);
+			free(response.memory);
+			return;
+		}
+		else
+			goto PRINT_AND_CLEANUP;
 	}
 
 	if (argc < 2) {

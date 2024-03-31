@@ -118,6 +118,7 @@ void do_torrents(int argc, char **argv)
 	struct MemoryStruct response = { .size = 0, .memory = NULL};
 	char postField[BUFSIZ] = "";
 	char partialPath[BUFSIZ] = "/torrents/";
+	cJSON *json;
 
 	if (argc < 1 || !strcmp(*argv, "help")) {
 		torrents_help();
@@ -128,7 +129,7 @@ void do_torrents(int argc, char **argv)
 
 	if (!strcmp(*argv, "list")) {
 		response = GET("/torrents/info");
-		cJSON *json = cJSON_Parse(response.memory);
+		json = cJSON_Parse(response.memory);
 		if (cJSON_IsArray(json)) {
 			printf("Hash     Progress Name\n");
 			cJSON *t;
@@ -190,7 +191,7 @@ void do_torrents(int argc, char **argv)
 		free(hash);
 
 		response = POST("/torrents/properties", postField);
-		cJSON *json = cJSON_Parse(response.memory);
+		json = cJSON_Parse(response.memory);
 		if (cJSON_IsObject(json)) {
 			char date[BUFSIZ];
 			time_t time;
@@ -344,7 +345,7 @@ void do_torrents(int argc, char **argv)
 			strcat(postField, hash);
 			free(hash);
 			response = POST("/torrents/files", postField);
-			cJSON *json = cJSON_Parse(response.memory);
+			json = cJSON_Parse(response.memory);
 			if (cJSON_IsArray(json)) {
 				printf("Index Size       Priority Progress File\n");
 				int idx;
@@ -395,7 +396,7 @@ void do_torrents(int argc, char **argv)
 
 			int idx;
 			response = POST("/torrents/downloadLimit", postField);
-			cJSON *json = cJSON_Parse(response.memory);
+			json = cJSON_Parse(response.memory);
 			if (json != NULL && cJSON_IsObject(json)) {
 				cJSON *limit = cJSON_GetObjectItemCaseSensitive(json, argv[2]);
 				if (cJSON_IsNumber(limit)) {
@@ -431,7 +432,7 @@ void do_torrents(int argc, char **argv)
 			strcat(postField, hash);
 			free(hash);
 			response = POST("/torrents/trackers", postField);
-			cJSON *json = cJSON_Parse(response.memory);
+			json = cJSON_Parse(response.memory);
 			if (cJSON_IsArray(json)) {
 				printf("Tier Peers Seeders Leechers Downloaded Status      Url\n");
 				const char *status[] = { "Disabled", "No contact", "Working", "Updating", "Not working" };
@@ -457,7 +458,7 @@ void do_torrents(int argc, char **argv)
 		}
 		if (!strcmp(argv[1], "category")) {
 			response = GET("/torrents/info");
-			cJSON *json = cJSON_Parse(response.memory);
+			json = cJSON_Parse(response.memory);
 			if (cJSON_IsArray(json)) {
 				cJSON *torrent;
 				cJSON_ArrayForEach(torrent, json) {
@@ -535,7 +536,7 @@ void do_torrents(int argc, char **argv)
 				strcat(postField, "hash=");
 				strcat(postField, hash);
 				response = POST("/torrents/trackers", postField);
-				cJSON *json = cJSON_Parse(response.memory);
+				json = cJSON_Parse(response.memory);
 				if (cJSON_IsArray(json)) {
 					strcat(postField, "&urls=");
 					cJSON *tracker;
@@ -634,7 +635,7 @@ void do_torrents(int argc, char **argv)
 		if (!strcmp(argv[1], "superseeding")) {
 			bool wasEnabled = false;
 			response = GET("/torrents/info");
-			cJSON *json = cJSON_Parse(response.memory);
+			json = cJSON_Parse(response.memory);
 			if (cJSON_IsArray(json)) {
 				cJSON *torrent;
 				cJSON_ArrayForEach(torrent, json) {
@@ -661,7 +662,7 @@ void do_torrents(int argc, char **argv)
 		if (!strcmp(argv[1], "forcestart")) {
 			bool wasEnabled = false;
 			response = GET("/torrents/info");
-			cJSON *json = cJSON_Parse(response.memory);
+			json = cJSON_Parse(response.memory);
 			if (cJSON_IsArray(json)) {
 				cJSON *torrent;
 				cJSON_ArrayForEach(torrent, json) {
@@ -688,7 +689,7 @@ void do_torrents(int argc, char **argv)
 		if (!strcmp(argv[1], "automanagement")) {
 			bool wasEnabled = false;
 			response = GET("/torrents/info");
-			cJSON *json = cJSON_Parse(response.memory);
+			json = cJSON_Parse(response.memory);
 			if (cJSON_IsArray(json)) {
 				cJSON *torrent;
 				cJSON_ArrayForEach(torrent, json) {

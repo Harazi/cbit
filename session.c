@@ -22,6 +22,8 @@ void do_session(int argc, char **argv)
 {
 	struct MemoryStruct response; 
 	char postField[BUFSIZ] = "";
+	cJSON *json;
+	cJSON *obj;
 
 	if (argc < 1 || !strcmp(*argv, "help")) {
 		session_help();
@@ -33,61 +35,60 @@ void do_session(int argc, char **argv)
 	if (!strcmp(*argv, "stats")) {
 
 		response = GET("/transfer/info");
-		cJSON *json = cJSON_Parse(response.memory);
+		json = cJSON_Parse(response.memory);
 		if (json != NULL && cJSON_IsObject(json)) {
 
 			int idx = -1;
 			bool perSecond = false;
-			cJSON *key;
-			cJSON_ArrayForEach(key, json) {
+			cJSON_ArrayForEach(obj, json) {
 				print_color(COLOR_BLUE);
-				if (!strcmp(key->string, "connection_status")) {
+				if (!strcmp(obj->string, "connection_status")) {
 					printf("Connection Status");
 					print_color(COLOR_RESET);
 					printf(": ");
-					if (!strcmp(key->valuestring, "disconnected"))
+					if (!strcmp(obj->valuestring, "disconnected"))
 						print_color(COLOR_RED);
-					if (!strcmp(key->valuestring, "firewalled"))
+					if (!strcmp(obj->valuestring, "firewalled"))
 						print_color(COLOR_YELLOW);
-					if (!strcmp(key->valuestring, "connected"))
+					if (!strcmp(obj->valuestring, "connected"))
 						print_color(COLOR_GREEN);
-					printf("%s\n", key->valuestring);
+					printf("%s\n", obj->valuestring);
 					print_color(COLOR_RESET);
 					continue;
 				}
 
-				idx = human_size(&key->valuedouble);
+				idx = human_size(&obj->valuedouble);
 
-				if (!strcmp(key->string, "dht_nodes")) {
+				if (!strcmp(obj->string, "dht_nodes")) {
 					printf("DHT Nodes");
 					idx = -1;
 				}
-				else if (!strcmp(key->string, "dl_info_data"))
+				else if (!strcmp(obj->string, "dl_info_data"))
 					printf("Downloaded Bytes");
-				else if (!strcmp(key->string, "dl_info_speed")) {
+				else if (!strcmp(obj->string, "dl_info_speed")) {
 					printf("Download Speed");
 					perSecond = true;
 				}
-				else if (!strcmp(key->string, "dl_rate_limit")) {
+				else if (!strcmp(obj->string, "dl_rate_limit")) {
 					printf("Download Limit");
 					perSecond = true;
 				}
-				else if (!strcmp(key->string, "up_info_data"))
+				else if (!strcmp(obj->string, "up_info_data"))
 					printf("Uploaded Bytes");
-				else if (!strcmp(key->string, "up_info_speed")) {
+				else if (!strcmp(obj->string, "up_info_speed")) {
 					printf("Upload Speed");
 					perSecond = true;
 				}
-				else if (!strcmp(key->string, "up_rate_limit")) {
+				else if (!strcmp(obj->string, "up_rate_limit")) {
 					printf("Upload Limit");
 					perSecond = true;
 				}
 				else
-					printf("%s", key->string);
+					printf("%s", obj->string);
 
 				print_color(COLOR_RESET);
 				printf(": ");
-				printf("%.*f%s%s\n", idx >= 0 ? 2 : 0, key->valuedouble, idx >= 0 ? sizeSuffixes[idx] : "", idx >= 0 && perSecond ? "/s" : "");
+				printf("%.*f%s%s\n", idx >= 0 ? 2 : 0, obj->valuedouble, idx >= 0 ? sizeSuffixes[idx] : "", idx >= 0 && perSecond ? "/s" : "");
 				idx = -1;
 				perSecond = false;
 			}
@@ -98,11 +99,8 @@ void do_session(int argc, char **argv)
 	}
 	else if (!strcmp(*argv, "log")) {
 		response = GET("/log/main");
-
-		cJSON *json = cJSON_Parse(response.memory);
+		json = cJSON_Parse(response.memory);
 		if (json != NULL && cJSON_IsArray(json)) {
-
-			cJSON *obj;
 			cJSON_ArrayForEach(obj, json) {
 				cJSON *timestamp = cJSON_GetObjectItemCaseSensitive(obj, "timestamp");
 				cJSON *message = cJSON_GetObjectItemCaseSensitive(obj, "message");

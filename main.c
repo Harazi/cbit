@@ -82,10 +82,10 @@ int main(int argc, char *argv[])
 		if (confDir == NULL) {
 			confDir = getenv("HOME");
 			strcat(confFile, confDir);
-			strcat(confFile, "/.config/qbit-cli");
+			strcat(confFile, "/.config/cbit");
 		} else {
 			strcat(confFile, confDir);
-			strcat(confFile, "/qbit-cli");
+			strcat(confFile, "/cbit");
 		}
 		if (mkdir(confFile, 0700)) {
 			if (errno == EEXIST) {
@@ -96,7 +96,7 @@ int main(int argc, char *argv[])
 			}
 		}
 
-		strcat(confFile, "/qbit-cli.ini");
+		strcat(confFile, "/cbit.ini");
 		FILE *f = fopen(confFile, "r");
 		if (f == NULL) {
 			if (errno == ENOENT) {

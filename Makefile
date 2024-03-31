@@ -9,17 +9,17 @@ LDLIBS 	= -lcurl
 objects	= $(patsubst %.c,%.o,$(filter-out main.c,$(wildcard *.c)))
 objects	+= cJSON.o
 
-qbit-cli: main.c $(objects)
+cbit: main.c $(objects)
 	$(CC) $(CFLAGS) -o $@ $< $(objects) $(LDLIBS)
 
 cJSON.o: cJSON/cJSON.c
 	$(CC) $(CFLAGS) -c $<
 
-install: qbit-cli
-	install -D -m 755 qbit-cli "$(DESTDIR)$(BINDIR)/qbit-cli"
+install: cbit
+	install -Dm755 $< "$(DESTDIR)$(BINDIR)/cbit"
 
 uninstall:
-	rm -f "$(DESTDIR)$(BINDIR)/qbit-cli"
+	rm -f "$(DESTDIR)$(BINDIR)/cbit"
 
 clean:
-	rm -f qbit-cli $(objects)
+	rm -f cbit $(objects)

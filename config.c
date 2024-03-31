@@ -24,10 +24,10 @@ void create_config_file(const char *path)
 
 	fprintf(f,
 		 "[Auth]\n"
-		 "Username=admin\n"
-		 "Password=adminadmin\n"
+		 "Username="DEFAULT_USERNAME"\n"
+		 "Password="DEFAULT_PASSWORD"\n"
 		 "[Server]\n"
-		 "Url=http://localhost:8080\n");
+		 "Url="DEFAULT_URL"\n");
 
 	if (fclose(f) == EOF) {
 		perror(path);
@@ -121,6 +121,14 @@ void parse_config_file(const char *path)
 		perror(path);
 		exit(errno);
 	}
+
+	if (config.auth.username == 0)
+		config.auth.username = strdup(DEFAULT_USERNAME);
+	if (config.auth.password == 0)
+		config.auth.password = strdup(DEFAULT_PASSWORD);
+	if (config.server.url == 0)
+		config.server.url = strdup(DEFAULT_URL);
+
 	return;
 
 FAILED_PARSING:

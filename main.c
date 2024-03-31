@@ -44,6 +44,7 @@ struct {
 
 int main(int argc, char *argv[])
 {
+	memset(&config, 0, sizeof(config));
 	config.flags.color = isatty(STDOUT_FILENO);
 
 	argc--;

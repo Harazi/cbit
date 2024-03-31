@@ -5,6 +5,9 @@
 #define PROGRAM_VERSION "v0.1"
 // https://stackoverflow.com/q/1848700
 #define LARGEST_INT_LENGTH 18
+#define DEFAULT_USERNAME "admin"
+#define DEFAULT_PASSWORD "adminadmin"
+#define DEFAULT_URL      "http://localhost:8080"
 
 struct AUTH {
 	char *username;

@@ -41,12 +41,14 @@ struct option addOpts[] = {
 	{ .opt = 'd', .key = "dlLimit",            .placeholder = "limit",    .defaultValue = NULL,    .value = NULL, .description = "Set torrent download speed limit. Unit in bytes/second" },
 	{ .opt = 'i', .key = "ratioLimit",         .placeholder = "ratio",    .defaultValue = NULL,    .value = NULL, .description = "Set torrent share ratio limit" },
 	{ .opt = 'm', .key = "seedingTimeLimit",   .placeholder = "time",     .defaultValue = NULL,    .value = NULL, .description = "Set torrent seeding time limit. Unit in minutes" },
-	{ .opt = 'H', .key = "skip_checking",      .placeholder = "",         .defaultValue = "false", .value = NULL, .description = "Skip hash checking" },
-	{ .opt = 'P', .key = "paused",             .placeholder = "",         .defaultValue = "false", .value = NULL, .description = "Add torrents in the paused state" },
-	{ .opt = 'R', .key = "root_folder",        .placeholder = "",         .defaultValue = "unset", .value = NULL, .description = "Create the root folder" },
-	{ .opt = 'A', .key = "autoTTM",            .placeholder = "",         .defaultValue = NULL,    .value = NULL, .description = "Set Automatic Torrent Management" },
-	{ .opt = 'S', .key = "sequentialDownload", .placeholder = "",         .defaultValue = "false", .value = NULL, .description = "Enable sequential download" },
-	{ .opt = 'F', .key = "firstLastPiecePrio", .placeholder = "",         .defaultValue = "false", .value = NULL, .description = "Prioritize download first last piece" },
+	{ .opt = 'H', .key = "skip_checking",      .placeholder = "",         .defaultValue = "false", .value = "true", .description = "Skip hash checking" },
+	{ .opt = 'P', .key = "paused",             .placeholder = "",         .defaultValue = "false", .value = "true", .description = "Add torrents in the paused state" },
+	{ .opt = 'R', .key = "root_folder",        .placeholder = "",         .defaultValue = "unset", .value = "true", .description = "Create the root folder" },
+	{ .opt = 'A', .key = "autoTTM",            .placeholder = "",         .defaultValue = NULL,    .value = "true", .description = "Set Automatic Torrent Management" },
+	{ .opt = 'S', .key = "sequentialDownload", .placeholder = "",         .defaultValue = "false", .value = "true", .description = "Enable sequential download" },
+	{ .opt = 'F', .key = "firstLastPiecePrio", .placeholder = "",         .defaultValue = "false", .value = "true", .description = "Prioritize download first last piece" },
+	{ .opt = 'M', .key = "stopCondition",      .placeholder = "",         .defaultValue = "false", .value = "MetadataReceived", .description = "Stop after receiving metadata" },
+	{ .opt = 'C', .key = "stopCondition",      .placeholder = "",         .defaultValue = "false", .value = "FilesChecked",     .description = "Stop after checking files" },
 	{ .opt = '\0' }
 };
 
@@ -241,7 +243,7 @@ void do_torrents(int argc, char **argv)
 	if (!strcmp(*argv, "add")) {
 		curl_mime *mime = curl_mime_init(curl);
 		int c;
-		while ((c = getopt(argc, argv, ":p:k:c:t:r:u:d:i:m:HPRASF")) != -1) {
+		while ((c = getopt(argc, argv, ":p:k:c:t:r:u:d:i:m:HPRASFMC")) != -1) {
 			if (c == ':') {
 				fprintf(stderr, "Option -%c requires an operand\n", optopt);
 				exit(EXIT_FAILURE);
@@ -254,10 +256,10 @@ void do_torrents(int argc, char **argv)
 
 			for (int i = 0; addOpts[i].opt != '\0'; i++) {
 				if (addOpts[i].opt == c) {
-					// Boolean options don't have a placeholder; they don't accept an argument
+					// If option value is NULL, then take argument as value
 					curl_mimepart *tmp = curl_mime_addpart(mime);
 					curl_mime_name(tmp, addOpts[i].key);
-					curl_mime_data(tmp, addOpts[i].placeholder[0] == '\0' ? "true" : optarg, CURL_ZERO_TERMINATED);
+					curl_mime_data(tmp, addOpts[i].value == NULL ? optarg : addOpts[i].value, CURL_ZERO_TERMINATED);
 					break;
 				}
 			}

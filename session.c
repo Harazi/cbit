@@ -13,7 +13,7 @@
 void session_help(void)
 {
 	printf(
-		"Usage: "PROGRAM_NAME" "CMD" { stats | log | limits }\n"
+		"Usage: "PROGRAM_NAME" "CMD" { info | log | limits }\n"
 		"       "PROGRAM_NAME" "CMD" set { downloadlimit | uploadlimit } LIMIT\n"
 	);
 }
@@ -32,7 +32,7 @@ void do_session(int argc, char **argv)
 
 	auth_login();
 
-	if (!strcmp(*argv, "stats")) {
+	if (!strcmp(*argv, "info")) {
 
 		response = GET("/transfer/info");
 		json = cJSON_Parse(response.memory);

@@ -118,13 +118,7 @@ int main(int argc, char *argv[])
 	curl = curl_easy_init();
 	curl_easy_setopt(curl, CURLOPT_COOKIEFILE, ""); // enable cookie engine
 
-	if (argc == 0) {
-		char *vec[] = { "stats" };
-		do_session(1, vec);
-		goto CLEANUP;
-	}
-
-	if (!strcmp(*argv, "help")) {
+	if (argc == 0 || !strcmp(*argv, "help")) {
 		print_help(stdout);
 		goto CLEANUP;
 	}

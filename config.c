@@ -226,7 +226,7 @@ void do_config(int argc, char **argv)
 		*key = '\0';
 		key++;
 		strcat(section, argv[0]);
-		strcat(section, "]");
+		strcat(section, "]\n");
 
 		FILE *f = fopen(confFile, "r+");
 		if (f == NULL) {

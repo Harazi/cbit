@@ -13,20 +13,20 @@
 void print_help(FILE *f)
 {
 	fprintf(f,
-		"Usage: %s [ OPTIONS ] OBJECT { COMMAND | help }\n"
+		"Usage: "PROGRAM_NAME" [ OPTIONS ] OBJECT { COMMAND | help }\n"
 		"\n"
 		"Objects:\n"
-		"    config     Get or set %s configurations\n"
+		"    config     Get or set "PROGRAM_NAME" configurations\n"
 		"    app        Get qBittorrent app data\n"
-		"    torrent    Operations related to torrents\n"
+		"    torrents   Manage, add, and delete torrents\n"
+		"    session    Show session informations\n"
 		"    setting    Get or set qBittorrent settings\n"
 		"\n"
 		"Options:\n"
 		"    { -h | --help }             print help and exit\n"
 		"    { -v | --version }          print version and exit\n"
-		"    { -c | --config } <FILE>    specify config file\n",
-		PROGRAM_NAME,
-		PROGRAM_NAME);
+		"    { -c | --config } <FILE>    specify config file\n"
+	);
 }
 
 struct {

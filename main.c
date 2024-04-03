@@ -35,7 +35,6 @@ struct {
 } cmds[] = {
 	{ "config", do_config },
 	{ "app", do_app },
-	{ "log", do_log },
 	{ "torrents", do_torrents },
 	{ "session", do_session },
 	{ "settings", do_settings },

@@ -366,7 +366,7 @@ void do_torrents(int argc, char **argv)
 					);
 					snprintf(
 						adjustBuf2, LARGEST_INT_LENGTH, "%.1f%%",
-						cJSON_GetObjectItemCaseSensitive(file, "priority")->valuedouble * 100
+						cJSON_GetObjectItemCaseSensitive(file, "progress")->valuedouble * 100
 					);
 					printf(
 						"%-5d %-10s %-8s %-8s %s\n",
